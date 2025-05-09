@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Fishing Game</title>
+<link rel="stylesheet" href="style.css">
+
+<style>
+#inventory {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+h3, h4, p {
+    margin: 0;
+  }
+
+  .createTrophyButton{
+      background-color: yellow;
+      border-radius: 5px;
+      border: none;
+      height: 25px;
+      margin-bottom: 5px;
+      width: 120px;
+  }
+  .sellFishButton{
+      background-color: red;
+      border-radius: 5px;
+      border: none;
+      height: 25px;
+      width: 120px;
+  }
+
+
+  .fish {
+      background-color: steelblue;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 20px 20px 20px 100px;
+  align-items: center;
+  justify-items: center;
+
+  padding: 10px;
+  width: 150px;
+  text-align: center;
+  }
+  .fish img {
+    width: 140px;
+    height: auto;
+  }
+
+:root{
+    --rarityCommon: #A9A9A9;
+    --rarityUncommon: #00FF00;
+    --rarityRare: #00BFFF;
+    --rarityEpic: #FF00FF;
+    --rarityLegendary: #FFFF00;
+    --raritySupernatural: #FF0000;
+
+
+}
+
+  .Common{
+border: solid 4px gray;
+border-radius: 10px;
+  }
+  .Uncommon{
+border: solid 4px rgb(104, 255, 99);
+border-radius: 10px;
+  }
+  .Rare{
+border: solid 4px rgb(48, 190, 255);
+border-radius: 10px;
+  }
+  .Epic{
+border: solid 4px rgb(214, 79, 255);
+border-radius: 10px;
+  }
+  .Legendary{
+border: solid 4px rgb(255, 222, 37);
+border-radius: 10px;
+  }
+  .Supernatrual{
+border: solid 4px rgb(255, 0, 0);
+border-radius: 10px;
+  }
+
+#collection{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+  }
+
+.fish-collection-entry{
+    height: 310px;
+    width: 275px;
+    background-color: steelblue;
+    padding-left:5px ;
+    justify-items: center;
+    margin: 2px;
+}
+.fish-collection-entry h2{
+text-align: center;
+    margin: 0;
+    margin-top: 5px;
+    padding: 0;
+}
+
+.fish-collection-entry img {
+    height: 140px;
+  }
+
+.rarity-entry{
+    display: grid;
+    grid-template-rows: 20px;
+    grid-template-columns: 100px 130px 5px;
+    justify-content: center;
+}
+
+</style>
+
+
+
+</head>
+<body>
+
+
+
+  <button onclick="fish()">Start Fishing</button>
+  
+  <select id="sortOption" onchange="updateInventoryDisplay()">
+    <option value="name">Sort by Name</option>
+    <option value="weightAsc">Weight ↑</option>
+    <option value="weightDesc">Weight ↓</option>
+    <option value="rarity">Sort by Rarity</option>
+  </select>
+
+  <span id="goldCoins">Coins: 0</span>
+  <span id="trophyPoints">Trophy Points: 0</span>
+  
+  <div id="inventory"></div>
+  <div id="collection"></div>
+<script>
+let inventory = [];
+let gold = 0;
+let trophyPoints = 0;
+
+const fishNameTableAndWeights = [
+    {Name:"Carp", MinWeight:0.4, MaxWeight:3.5,GoldValue:100},
+    {Name:"Catfish", MinWeight:0.4, MaxWeight:3.5,GoldValue:100},
+    {Name:"Perch", MinWeight:0.4, MaxWeight:3.5,GoldValue:100},
+    {Name:"Pike", MinWeight:0.4, MaxWeight:3.5,GoldValue:100},
+    {Name:"Salmon", MinWeight:0.4, MaxWeight:3.5,GoldValue:100},
+    {Name:"Lionfish", MinWeight:0.4, MaxWeight:3.5,GoldValue:100}
+];
+
+const fishRarityTable = [
+    { rarity: "Common", weight: 100, priceMultiplier: 1 },
+    { rarity: "Uncommon", weight: 50, priceMultiplier: 1.5 },
+    { rarity: "Rare", weight: 15, priceMultiplier: 2 },
+    { rarity: "Epic", weight: 7, priceMultiplier: 2.5 },
+    { rarity: "Legendary", weight: 5, priceMultiplier: 3 },
+    { rarity: "Supernatrual", weight: 1, priceMultiplier: 5 },
+  ];
+
+  const fishCollection = fishNameTableAndWeights.map(f => ({
+    name: f.Name,
+    minWeight: f.MinWeight,
+    maxWeight: f.MaxWeight,
+    rarities: {
+        Common: { unlocked: false, bestWeight: 0 },
+        Uncommon: { unlocked: false, bestWeight: 0 },
+        Rare: { unlocked: false, bestWeight: 0 },
+        Epic: { unlocked: false, bestWeight: 0 },
+        Legendary: { unlocked: false, bestWeight: 0 },
+        Supernatrual: { unlocked: false, bestWeight: 0 }
+    }
+}));
+
+function fish(){
+    const fish = getFish();
+    const fishRarity = getFishRarity();
+    const fishSellPrice = Math.floor(fish.sellprice * fishRarity.priceMultiplier);
+    const rarity = fishRarity.rarity;
+    const fishTropyPoints = Math.floor(fish.trophyPoints* fishRarity.priceMultiplier);
+
+    createFishElement(fish, rarity, fishSellPrice, fishTropyPoints);
+    updateInventoryDisplay();
+}
+
+function getFish() {
+    const randomIndex = Math.floor(Math.random() * fishNameTableAndWeights.length);
+    const selectedFish = fishNameTableAndWeights[randomIndex];
+    const weight = (Math.random() * (selectedFish.MaxWeight - selectedFish.MinWeight) + selectedFish.MinWeight).toFixed(1);
+    const goldValue = selectedFish.GoldValue;
+    
+    const percentOfMax = weight / selectedFish.MaxWeight
+    const sellprice = Math.floor(goldValue * percentOfMax);
+    const trophyPoints = Math.floor(sellprice / 10);
+    
+    return {
+        name: selectedFish.Name,
+        weight: parseFloat(weight),
+        MaxWeight: selectedFish.MaxWeight,
+        MinWeight: selectedFish.MinWeight,
+        percentOfMax: percentOfMax.toFixed(2),
+        sellprice: sellprice,
+        trophyPoints: trophyPoints,
+    };
+}
+
+function getFishRarity() {
+    const totalWeight = fishRarityTable.reduce((sum, r) => sum + r.weight, 0);
+    const rand = Math.random() * totalWeight;
+
+    let cumulative = 0;
+        for (const entry of fishRarityTable) {
+            cumulative += entry.weight;
+            if (rand < cumulative) {
+                return {
+                    rarity: entry.rarity,
+                    priceMultiplier: entry.priceMultiplier,
+                };
+            }
+        }
+    alert ("Error"); 
+}
+
+function createFishElement(fish, rarity, fishSellPrice, fishTropyPoints) {
+    inventory.push({
+        ...fish,
+        rarity,
+        fishSellPrice,
+        fishTropyPoints
+    });
+    renderInventory();
+}
+
+function renderInventory() {
+    const inventoryDiv = document.getElementById('inventory');
+    inventoryDiv.innerHTML = ''; 
+
+    for (const fish of inventory) {
+        const fishDiv = document.createElement('div');
+        fishDiv.classList.add('fish', fish.rarity);
+
+        const nameEl = document.createElement('h3');
+        nameEl.innerText = fish.name;
+
+        const weightEl = document.createElement('p');
+        weightEl.innerText = `Weight: ${fish.weight} kg`;
+
+        const rarityEl = document.createElement('p');
+        rarityEl.innerText = fish.rarity;
+
+        const imgEl = document.createElement('img');
+        imgEl.src = `Assets/fishImages/${fish.name}.png`;
+        imgEl.alt = fish.name;
+
+        const trophyBtn = document.createElement('button');
+        trophyBtn.classList.add('createTrophyButton');
+        trophyBtn.innerText = `Trophy for ${fish.fishTropyPoints} TP`;
+        trophyBtn.onclick = () => {
+            trophyFish(fish);
+            inventory.splice(inventory.indexOf(fish), 1);
+            renderInventory();
+        };
+
+        const sellBtn = document.createElement('button');
+        sellBtn.classList.add('sellFishButton');
+        sellBtn.innerText = `Sell for ${fish.fishSellPrice} Gold`;
+        sellBtn.onclick = () => {
+            sellFish(fish.fishSellPrice);
+            inventory.splice(inventory.indexOf(fish), 1);
+            renderInventory();
+        };
+
+        fishDiv.append(nameEl, weightEl, rarityEl, imgEl, trophyBtn, sellBtn);
+        inventoryDiv.appendChild(fishDiv);
+    }
+}
+
+function updateInventoryDisplay() {
+    const option = document.getElementById('sortOption').value;
+
+    if (option === 'name') {
+        inventory.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (option === 'weightAsc') {
+        inventory.sort((a, b) => a.weight - b.weight);
+    } else if (option === 'weightDesc') {
+        inventory.sort((a, b) => b.weight - a.weight);
+    } else if (option === 'rarity') {
+        const rarityOrder = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Supernatrual"];
+        inventory.sort((a, b) => rarityOrder.indexOf(a.rarity) - rarityOrder.indexOf(b.rarity));
+    }
+    renderInventory();
+}
+
+function trophyFish(fish) {
+    trophyPoints += fish.fishTropyPoints;
+
+    const fishElement = event.target.closest('.fish');
+    if (fishElement) {
+        fishElement.remove();
+    }
+
+    document.getElementById('trophyPoints').innerText = `Trophy Points: ${trophyPoints}`;
+
+    updateCollection(fish); 
+}
+
+function sellFish(price){
+    gold += price;
+
+    const fishElement = event.target.closest('.fish');
+    if (fishElement) {
+        fishElement.remove();
+    }
+
+    const goldDiv = document.getElementById('goldCoins');
+    goldDiv.innerText = `Coins: ${gold}`;
+}
+
+function updateCollection(fish) {
+    const entry = fishCollection.find(f => f.name === fish.name);
+    const rarityData = entry.rarities[fish.rarity];
+
+    if (!rarityData.unlocked) {
+        rarityData.unlocked = true;
+    }
+
+    if (fish.weight > rarityData.bestWeight) {
+        rarityData.bestWeight = fish.weight;
+    }
+
+    renderCollection(); 
+}
+
+
+function renderCollection() {
+    const container = document.getElementById('collection');
+    container.innerHTML = '';
+
+    const rarities = ["Common", "Uncommon", "Rare", "Epic", "Legendary", "Supernatrual"];
+
+    fishCollection.forEach(fish => {
+        const fishSection = document.createElement('div');
+        fishSection.classList.add('fish-collection-entry');
+
+        const title = document.createElement('h2');
+        title.innerText = fish.name;
+
+        const hasBeenCaught = rarities.some(rarity => fish.rarities[rarity].unlocked);
+
+        const img = document.createElement('img');
+        img.src = hasBeenCaught
+            ? `Assets/fishImages/${fish.name}.png`
+            : `Assets/fishImages/${fish.name}silhouette.png`;
+        img.alt = fish.name;
+
+        const rarityContainer = document.createElement('div');
+        rarityContainer.classList.add('rarity-container');
+
+        rarities.forEach(rarity => {
+            const rarityData = fish.rarities[rarity];
+
+            const rarityDiv = document.createElement('div');
+            rarityDiv.classList.add('rarity-entry');
+
+            const rarityName = document.createElement('p');
+            rarityName.innerText = rarity;
+
+            const weightText = document.createElement('p');
+            weightText.innerText = rarityData.unlocked
+                ? `Max Weight: ${rarityData.bestWeight.toFixed(1)} kg`
+                : 'Catch fish for stats';
+
+            const star = document.createElement('span');
+            if (rarityData.unlocked && rarityData.bestWeight >= fish.maxWeight) {
+                star.innerText = '★';
+                star.classList.add('star');
+            }
+
+            rarityDiv.append(rarityName, weightText, star);
+            rarityContainer.appendChild(rarityDiv);
+        });
+
+        fishSection.append(title, img, rarityContainer);
+        container.appendChild(fishSection);
+    });
+}
+renderCollection();
+
+
+</script>
+</body>
+</html>    
