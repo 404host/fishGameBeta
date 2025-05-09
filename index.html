@@ -257,7 +257,7 @@ function renderInventory() {
         rarityEl.innerText = fish.rarity;
 
         const imgEl = document.createElement('img');
-        imgEl.src = `Assets/fishImages/${fish.name}.png`;
+        imgEl.src = `${fish.name}.png`;
         imgEl.alt = fish.name;
 
         const trophyBtn = document.createElement('button');
@@ -357,8 +357,8 @@ function renderCollection() {
 
         const img = document.createElement('img');
         img.src = hasBeenCaught
-            ? `Assets/fishImages/${fish.name}.png`
-            : `Assets/fishImages/${fish.name}silhouette.png`;
+            ? `${fish.name}.png`
+            : `${fish.name}silhouette.png`;
         img.alt = fish.name;
 
         const rarityContainer = document.createElement('div');
